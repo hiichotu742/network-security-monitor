@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Network Monitoring Dashboard</h1>
+
+    <div class="chart-container">
+        <canvas id="cpuChart"></canvas>
+        <canvas id="memoryChart"></canvas>
+        <canvas id="networkChart"></canvas>
+    </div>
+
+    <h2>Alerts</h2>
+    <ul id="alerts"></ul>
+
+    <h2>Logs</h2>
+    <ul id="logs"></ul>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

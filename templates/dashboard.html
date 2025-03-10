@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Network Security Monitor</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        :root {
+            --primary: #3498db;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --success: #2ecc71;
+            --dark: #2c3e50;
+            --light: #ecf0f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .navbar {
+            background-color: rgba(20, 20, 20, 0.9);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .card {
+            background-color: #1e1e1e;
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            margin-bottom: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 16px rgba(0,0,0,0.2);
+        }
+        
+        .card-header {
+            background-color: rgba(20, 20, 20, 0.7);
+            color: white;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            border-top-left-radius: 10px !important;
+            border-top-right-radius: 10px !important;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 250px;
+            width: 100%;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .status-good {
+            background-color: var(--success);
+        }
+        
+        .status-warning {
+            background-color: var(--warning);
+        }
+        
+        .status-danger {
+            background-color: var(--danger);
+        }
+        
+        .network-map {
+            height: 400px;
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .device-node {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background-color: rgba(52, 152, 219, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .device-node:hover {
+            transform: scale(1.1);
+        }
+        
+        .device-router {
+            background-color: rgba(231, 76, 60, 0.8);
+        }
+        
+        .device-switch {
+            background-color: rgba(46, 204, 113, 0.8);
+        }
+        
+        .device-pc {
+            background-color: rgba(52, 152, 219, 0.8);
+        }
+        
+        .device-suspicious {
+            background-color: rgba(241, 196, 15, 0.8);
+            animation: pulse 2s infinite;
+        }
+        
+        .alert-area {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .alert-item {
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            border-left: 4px solid transparent;
+        }
+        
+        .alert-critical {
+            background-color: rgba(231, 76, 60, 0.3);
+            border-left-color: #e74c3c;
+        }
+        
+        .alert-warning {
+            background-color: rgba(241, 196, 15, 0.3);
+            border-left-color: #f1c40f;
+        }
+        
+        .alert-info {
+            background-color: rgba(52, 152, 219, 0.3);
+            border-left-color: #3498db;
+        }
+        
+        .log-area {
+            background-color: #2a2a2a;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            padding: 10px;
+        }
+        
+        .log-line {
+            margin: 0;
+            padding: 2px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .simulation-controls {
+            margin-top: 20px;
+        }
+        
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(241, 196, 15, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(241, 196, 15, 0);
+            }
+        }
+        
+        .badge-alert {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .progress-thin {
+            height: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .icon-stats {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        
+        .stats-value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .stats-label {
+            font-size: 14px;
+            color: #aaa;
+        }
+        
+        .network-traffic-line {
+            stroke: var(--primary);
+            stroke-width: 2;
+            fill: none;
+        }
+        
+        .network-traffic-area {
+            fill: url(#trafficGradient);
+            opacity: 0.6;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 200px;
+            }
+            
+            .network-map {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-shield-alt me-2"></i>Network Security Monitor
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Network Map</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Alerts</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Logs</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Settings</a>
+                    </li>
+                </ul>
+                <span class="navbar-text">
+                    <div class="d-flex align-items-center">
+                        <div class="status-indicator status-good" id="systemStatus"></div>
+                        <span id="statusText">System Online</span>
+                    </div>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid py-4">
+        <!-- System Overview -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-microchip me-2"></i>CPU Usage</span>
+                        <span class="badge bg-primary rounded-pill" id="cpuBadge">20%</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="cpuChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-memory me-2"></i>Memory Usage</span>
+                        <span class="badge bg-primary rounded-pill" id="memoryBadge">40%</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="memoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-network-wired me-2"></i>Network Traffic</span>
+                        <span class="badge bg-primary rounded-pill" id="networkBadge">1.2 MB/s</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="networkChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Activity and Alerts -->
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-project-diagram me-2"></i>Network Map</span>
+                        <button class="btn btn-sm btn-outline-primary" id="scanNetworkBtn">
+                            <i class="fas fa-sync-alt me-1"></i>Scan Network
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="network-map" id="networkMap">
+                            <!-- Network nodes will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="fas fa-exchange-alt me-2"></i>Packet Analysis
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="chart-container">
+                                    <canvas id="protocolDistributionChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="chart-container">
+                                    <canvas id="topTalkersChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-exclamation-triangle me-2"></i>Security Alerts</span>
+                        <span class="badge bg-danger rounded-pill" id="alertCount">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert-area" id="alertArea">
+                            <!-- Alerts will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="fas fa-terminal me-2"></i>System Logs
+                    </div>
+                    <div class="card-body">
+                        <div class="log-area" id="logArea">
+                            <!-- Log entries will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Controls -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="fas fa-flask me-2"></i>Attack Simulation
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="attackType" class="form-label">Simulation Type</label>
+                            <select class="form-select" id="attackType">
+                                <option value="port_scan">Port Scan Attack</option>
+                                <option value="dos">DoS Attack</option>
+                                <option value="malware">Malware Communication</option>
+                                <option value="credential">Credential Stuffing</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-danger w-100" id="simulateAttackBtn">
+                            <i class="fas fa-play me-2"></i>Simulate Attack
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Chart configuration
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#aaa'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)'
+                    },
+                    ticks: {
+                        color: '#aaa'
+                    }
+                }
+            },
+            elements: {
+                line: {
+                    tension: 0.4
+                }
+            },
+            animation: {
+                duration: 500
+            }
+        };
+
+        // Initialize charts
+        const cpuChart = new Chart(
+            document.getElementById('cpuChart').getContext('2d'),
+            {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [{
+                        label: 'CPU Usage %',
+                        data: Array(20).fill(0),
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            }
+        );
+
+        const memoryChart = new Chart(
+            document.getElementById('memoryChart').getContext('2d'),
+            {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [{
+                        label: 'Memory Usage %',
+                        data: Array(20).fill(0),
+                        borderColor: '#2ecc71',
+                        backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                        fill: true
+                    }]
+                },
+                options: chartOptions
+            }
+        );
+
+        const networkChart = new Chart(
+            document.getElementById('networkChart').getContext('2d'),
+            {
+                type: 'line',
+                data: {
+                    labels: Array(20).fill(''),
+                    datasets: [
+                        {
+                            label: 'Incoming (KB/s)',
+                            data: Array(20).fill(0),
+                            borderColor: '#2ecc71',
+                            backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                            fill: true
+                        },
+                        {
+                            label: 'Outgoing (KB/s)',
+                            data: Array(20).fill(0),
+                            borderColor: '#e74c3c',
+                            backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                color: '#ddd'
+                            }
+                        }
+                    }
+                }
+            }
+        );
+
+        const protocolDistributionChart = new Chart(
+            document.getElementById('protocolDistributionChart').getContext('2d'),
+            {
+                type: 'doughnut',
+                data: {
+                    labels: ['TCP', 'UDP', 'ICMP', 'Other'],
+                    datasets: [{
+                        data: [65, 20, 10, 5],
+                        backgroundColor: [
+                            '#3498db',
+                            '#2ecc71',
+                            '#f39c12',
+                            '#9b59b6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                color: '#ddd'
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Protocol Distribution',
+                            color: '#ddd'
+                        }
+                    }
+                }
+            }
+        );
+
+        const topTalkersChart = new Chart(
+            document.getElementById('topTalkersChart').getContext('2d'),
+            {
+                type: 'bar',
+                data: {
+                    labels: ['192.168.1.1', '192.168.1.5', '192.168.1.10', '192.168.1.15'],
+                    datasets: [{
+                        label: 'Traffic (KB)',
+                        data: [1200, 950, 600, 400],
+                        backgroundColor: '#3498db'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Top Talkers',
+                            color: '#ddd'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#aaa'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#aaa'
+                            }
+                        }
+                    }
+                }
+            }
+        );
+
+        // Network map initialization
+        function initNetworkMap() {
+            const networkMap = document.getElementById('networkMap');
+            networkMap.innerHTML = '';
+            
+            // Add router
+            addDeviceNode('router', 'Router', '192.168.1.1', 200, 200);
+            
+            // Add some regular devices
+            addDeviceNode('pc', 'PC-1', '192.168.1.5', 100, 100);
+            addDeviceNode('pc', 'PC-2', '192.168.1.10', 300, 100);
+            addDeviceNode('pc', 'PC-3', '192.168.1.15', 100, 300);
+            addDeviceNode('pc', 'PC-4', '192.168.1.20', 300, 300);
+        }
+
+        function addDeviceNode(type, name, ip, x, y) {
+            const networkMap = document.getElementById('networkMap');
+            const node = document.createElement('div');
+            node.className = `device-node device-${type}`;
+            node.style.left = `${x}px`;
+            node.style.top = `${y}px`;
+            
+            let icon;
+            switch (type) {
+                case 'router':
+                    icon = 'fas fa-wifi';
+                    break;
+                case 'switch':
+                    icon = 'fas fa-exchange-alt';
+                    break;
+                case 'pc':
+                    icon = 'fas fa-desktop';
+                    break;
+                case 'suspicious':
+                    icon = 'fas fa-skull-crossbones';
+                    break;
+                default:
+                    icon = 'fas fa-question';
+            }
+            
+            node.innerHTML = `<i class="${icon}"></i>`;
+            node.title = `${name} (${ip})`;
+            
+            node.addEventListener('click', () => {
+                alert(`Device: ${name}\nIP: ${ip}\nType: ${type}`);
+            });
+            
+            networkMap.appendChild(node);
+            return node;
+        }
+
+        // Add alerts
+        function addAlert(type, message, severity) {
+            const alertArea = document.getElementById('alertArea');
+            const alertTime = new Date().toLocaleTimeString();
+            
+            const alertItem = document.createElement('div');
+            alertItem.className = `alert-item alert-${severity.toLowerCase()}`;
+            
+            let severityBadge;
+            switch (severity.toLowerCase()) {
+                case 'critical':
+                    severityBadge = '<span class="badge bg-danger me-2">Critical</span>';
+                    break;
+                case 'warning':
+                    severityBadge = '<span class="badge bg-warning text-dark me-2">Warning</span>';
+                    break;
+                default:
+                    severityBadge = '<span class="badge bg-info me-2">Info</span>';
+            }
+            
+            alertItem.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        ${severityBadge}
+                        <strong>${type}</strong>
+                    </div>
+                    <small class="text-muted">${alertTime}</small>
+                </div>
+                <div class="mt-1">${message}</div>
+            `;
+            
+            alertArea.prepend(alertItem);
+            
+            // Update alert count
+            const alertCount = document.getElementById('alertCount');
+            alertCount.textContent = parseInt(alertCount.textContent) + 1;
+            
+            // Check if critical
+            if (severity.toLowerCase() === 'critical') {
+                const systemStatus = document.getElementById('systemStatus');
+                const statusText = document.getElementById('statusText');
+                
+                systemStatus.className = 'status-indicator status-danger';
+                statusText.textContent = 'Critical Alert Detected';
+                
+                // Add suspicious device to map
+                if (type.includes('Port Scan')) {
+                    addDeviceNode('suspicious', 'Unknown', '192.168.1.100', 150, 150);
+                }
+            }
+            
+            // Add to logs
+            addLogEntry(`ALERT [${severity}]: ${message}`);
+        }
+
+        // Add log entries
+        function addLogEntry(message) {
+            const logArea = document.getElementById('logArea');
+            const logTime = new Date().toLocaleTimeString();
+            
+            const logLine = document.createElement('p');
+            logLine.className = 'log-line';
+            logLine.textContent = `[${logTime}] ${message}`;
+            
+            logArea.prepend(logLine);
+            
+            // Keep only the last 100 logs
+            if (logArea.children.length > 100) {
+                logArea.removeChild(logArea.lastChild);
+            }
+        }
+
+        // Simulate attack
+        document.getElementById('simulateAttackBtn').addEventListener('click', function() {
+            const attackType = document.getElementById('attackType').value;
+            
+            fetch(`/simulate_attack?type=${attackType}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const attackMessages = {
+                            'port_scan': 'Multiple connection attempts detected from 192.168.1.100 to various ports',
+                            'dos': 'Abnormal traffic volume detected - possible DoS attack from 10.0.0.5',
+                            'malware': 'Suspicious outbound connection to malware C2 server (45.77.65.211)',
+                            'credential': 'Multiple failed login attempts detected across services'
+                        };
+                        
+                        const attackSeverities = {
+                            'port_scan': 'Warning',
+                            'dos': 'Critical',
+                            'malware': 'Critical',
+                            'credential': 'Warning'
+                        };
+                        
+                        addAlert(
+                            `${attackType.toUpperCase()} Attack Detected`, 
+                            attackMessages[attackType], 
+                            attackSeverities[attackType]
+                        );
+                        
+                        // Update visuals based on attack type
+                        if (attackType === 'dos') {
+                            // Spike in network traffic
+                            const lastData = networkChart.data.datasets[0].data;
+                            for (let i = 0; i < 5; i++) {
+                                lastData[lastData.length - 1 - i] = 2000 + Math.random() * 500;
+                            }
+                            networkChart.update();
+                            
+                            // Add suspicious node to network map
+                            addDeviceNode('suspicious', 'DoS-Attacker', '10.0.0.5', 250, 250);
+                        } else if (attackType === 'port_scan') {
+                            // Add suspicious node to network map
+                            addDeviceNode('suspicious', 'Scanner', '192.168.1.100', 150, 150);
+                        } else if (attackType === 'malware') {
+                            // Change a node to suspicious
+                            const nodes = document.querySelectorAll('.device-pc');
+                            if (nodes.length > 0) {
+                                nodes[0].className = 'device-node device-suspicious';
+                            }
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error simulating attack:', error);
+                    addLogEntry(`Error simulating attack: ${error}`);
+                });
+        });
+
+        // Update charts
+        let prev_net_sent = 0;
+        let prev_net_recv = 0;
+        
+        function updateCharts() {
+            fetch('/stats')
+                .then(response => response.json())
+                .then(data => {
+                    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    
+                    // Update CPU chart
+                    cpuChart.data.labels.push(time);
+                    cpuChart.data.labels.shift();
+                    cpuChart.data.datasets[0].data.push(data.cpu_usage);
+                    cpuChart.data.datasets[0].data.shift();
+                    cpuChart.update();
+                    
+                    // Update badge
+                    document.getElementById('cpuBadge').textContent = `${Math.round(data.cpu_usage)}%`;
+                    
+                    // Update Memory chart
+                    memoryChart.data.labels.push(time);
+                    memoryChart.data.labels.shift();
+                    memoryChart.data.datasets[0].data.push(data.memory_usage);
+                    memoryChart.data.datasets[0].data.shift();
+                    memoryChart.update();
+                    
+                    // Update badge
+                    document.getElementById('memoryBadge').textContent = `${Math.round(data.memory_usage)}%`;
+                    
+                    // Calculate network rate (KB/s)
+                    const net_sent_rate = prev_net_sent ? (data.network_sent - prev_net_sent) / 1024 : 0;
+                    const net_recv_rate = prev_net_recv ? (data.network_recv - prev_net_recv) / 1024 : 0;
+                    
+                    prev_net_sent = data.network_sent;
+                    prev_net_recv = data.network_recv;
+                    
+                    // Update Network chart
+                    networkChart.data.labels.push(time);
+                    networkChart.data.labels.shift();
+                    networkChart.data.datasets[0].data.push(net_recv_rate);
+                    networkChart.data.datasets[0].data.shift();
+                    networkChart.data.datasets[1].data.push(net_sent_rate);
+                    networkChart.data.datasets[1].data.shift();
+                    networkChart.update();
+                    
+                    // Update badge
+                    const totalTraffic = (net_sent_rate + net_recv_rate).toFixed(1);
+                    document.getElementById('networkBadge').textContent = `${totalTraffic} KB/s`;
+                    
+                    // Log stats
+                    addLogEntry(`Stats - CPU: ${Math.round(data.cpu_usage)}%, Memory: ${Math.round(data.memory_usage)}%, Network: ${totalTraffic} KB/s`);
+                })
+                .catch(error => {
+                    console.error('Error updating charts:', error);
+                    addLogEntry(`Error updating statistics: ${error}`);
+                });
+                
+            // Update alerts
+            fetch('/alerts')
+                .then(response => response.json())
+                .then(alerts => {
+                    if (alerts && alerts.length > 0) {
+                        const alertArea = document.getElementById('alertArea');
+                        alertArea.innerHTML = '';   // Clear existing alerts
+                    }
+                }
+            );
+
+            // Update these functions at the end of your HTML file, just before the </body> tag
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize the network map
+    initNetworkMap();
+
+    // Set up simulation button
+    document.getElementById('simulateAttackBtn').addEventListener('click', function() {
+        const attackType = document.getElementById('attackType').value;
+        
+        fetch(`/simulate_attack?type=${attackType}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Get alert details from response
+                    const alertType = data.alert.type;
+                    const alertMessage = data.alert.message;
+                    const alertSeverity = data.alert.severity;
+                    
+                    // Map severity to our UI terminology
+                    let uiSeverity;
+                    switch(alertSeverity) {
+                        case 'CRITICAL':
+                            uiSeverity = 'Critical';
+                            break;
+                        case 'HIGH':
+                            uiSeverity = 'Critical';
+                            break;
+                        case 'MEDIUM':
+                            uiSeverity = 'Warning';
+                            break;
+                        default:
+                            uiSeverity = 'Info';
+                    }
+                    
+                    addAlert(`${attackType.toUpperCase()} Attack Detected`, alertMessage, uiSeverity);
+                    
+                    // Update visuals based on attack type
+                    if (attackType === 'dos') {
+                        // Spike in network traffic
+                        const lastData = networkChart.data.datasets[0].data;
+                        for (let i = 0; i < 5; i++) {
+                            lastData[lastData.length - 1 - i] = 2000 + Math.random() * 500;
+                        }
+                        networkChart.update();
+                        
+                        // Add suspicious node to network map
+                        addDeviceNode('suspicious', 'DoS-Attacker', '10.0.0.5', 250, 250);
+                    } else if (attackType === 'port_scan') {
+                        // Add suspicious node to network map
+                        addDeviceNode('suspicious', 'Scanner', '192.168.1.100', 150, 150);
+                    } else if (attackType === 'malware') {
+                        // Change a node to suspicious
+                        const nodes = document.querySelectorAll('.device-pc');
+                        if (nodes.length > 0) {
+                            nodes[0].className = 'device-node device-suspicious';
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error simulating attack:', error);
+                addLogEntry(`Error simulating attack: ${error}`);
+            });
+    });
+
+    // Set up refresh button
+    document.getElementById('scanNetworkBtn').addEventListener('click', function() {
+        fetch('/scan')
+            .then(response => response.json())
+            .then(data => {
+                // Clear the network map
+                document.getElementById('networkMap').innerHTML = '';
+                
+                // Add each device to the map
+                data.devices.forEach((device, index) => {
+                    // Position devices in a circular pattern
+                    const radius = 150;
+                    const angle = (index / data.devices.length) * Math.PI * 2;
+                    const x = 200 + radius * Math.cos(angle);
+                    const y = 200 + radius * Math.sin(angle);
+                    
+                    addDeviceNode(device.type, device.name, device.ip, x, y);
+                });
+                
+                // Add log entry
+                addLogEntry(`Network scan completed: ${data.devices.length} devices found`);
+                
+                // Check for new devices
+                if (data.new_devices && data.new_devices.length > 0) {
+                    data.new_devices.forEach(device => {
+                        addAlert(
+                            'New Device Detected',
+                            `New device found on network: ${device.ip} (${device.mac})`,
+                            'Warning'
+                        );
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error scanning network:', error);
+                addLogEntry(`Error scanning network: ${error}`);
+            });
+    });
+
+    // Setup periodic data updates
+    function updateData() {
+        // Update system stats and charts
+        fetch('/stats')
+            .then(response => response.json())
+            .then(data => {
+                const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                
+                // Update CPU chart
+                cpuChart.data.labels.push(time);
+                cpuChart.data.labels.shift();
+                cpuChart.data.datasets[0].data.push(data.cpu_usage);
+                cpuChart.data.datasets[0].data.shift();
+                cpuChart.update();
+                
+                // Update badge
+                document.getElementById('cpuBadge').textContent = `${Math.round(data.cpu_usage)}%`;
+                
+                // Update Memory chart
+                memoryChart.data.labels.push(time);
+                memoryChart.data.labels.shift();
+                memoryChart.data.datasets[0].data.push(data.memory_usage);
+                memoryChart.data.datasets[0].data.shift();
+                memoryChart.update();
+                
+                // Update badge
+                document.getElementById('memoryBadge').textContent = `${Math.round(data.memory_usage)}%`;
+                
+                // Calculate network rate (KB/s)
+                const net_sent_rate = Math.random() * 500; // Simulated for display
+                const net_recv_rate = Math.random() * 800; // Simulated for display
+                
+                // Update Network chart
+                networkChart.data.labels.push(time);
+                networkChart.data.labels.shift();
+                networkChart.data.datasets[0].data.push(net_recv_rate);
+                networkChart.data.datasets[0].data.shift();
+                networkChart.data.datasets[1].data.push(net_sent_rate);
+                networkChart.data.datasets[1].data.shift();
+                networkChart.update();
+                
+                // Update badge
+                const totalTraffic = (net_sent_rate + net_recv_rate).toFixed(1);
+                document.getElementById('networkBadge').textContent = `${totalTraffic} KB/s`;
+            })
+            .catch(error => {
+                console.error('Error updating stats:', error);
+            });
+            
+        // Update alerts
+        fetch('/alerts')
+            .then(response => response.json())
+            .then(alerts => {
+                if (alerts && alerts.length > 0) {
+                    const alertArea = document.getElementById('alertArea');
+                    
+                    // Check for new alerts (compare with what's displayed)
+                    const displayedAlerts = alertArea.querySelectorAll('.alert-item');
+                    const displayedCount = displayedAlerts.length;
+                    
+                    if (alerts.length > displayedCount) {
+                        // We have new alerts to display
+                        const newAlerts = alerts.slice(0, alerts.length - displayedCount);
+                        
+                        newAlerts.forEach(alert => {
+                            let severity;
+                            switch(alert.severity) {
+                                case 'CRITICAL':
+                                case 'HIGH':
+                                    severity = 'Critical';
+                                    break;
+                                case 'MEDIUM':
+                                case 'WARNING':
+                                    severity = 'Warning';
+                                    break;
+                                default:
+                                    severity = 'Info';
+                            }
+                            
+                            addAlert(alert.type, alert.message, severity);
+                        });
+                    }
+                    
+                    // Update the alert count badge
+                    document.getElementById('alertCount').textContent = alerts.length;
+                }
+            })
+            .catch(error => {
+                console.error('Error updating alerts:', error);
+            });
+            
+        // Check logs
+        fetch('/logs')
+            .then(response => response.json())
+            .then(logs => {
+                if (logs && logs.length > 0) {
+                    const logArea = document.getElementById('logArea');
+                    
+                    // Keep only the latest logs that aren't already displayed
+                    const displayedLogs = logArea.querySelectorAll('.log-line');
+                    const displayedCount = displayedLogs.length;
+                    
+                    if (logs.length > displayedCount) {
+                        // We have new logs to display
+                        logs.slice(-5).forEach(log => {
+                            addLogEntry(log.trim());
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error updating logs:', error);
+            });
+    }
+
+    // Update data every 3 seconds
+    setInterval(updateData, 3000);
+    
+    // Initial data update
+    updateData();
+});
+
+// These functions simulate data when backend isn't available
+function getRandomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Update CPU chart with random data
+function simulateCpuData() {
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const cpuUsage = getRandomInt(10, 40);
+    
+    cpuChart.data.labels.push(time);
+    cpuChart.data.labels.shift();
+    cpuChart.data.datasets[0].data.push(cpuUsage);
+    cpuChart.data.datasets[0].data.shift();
+    cpuChart.update();
+    
+    document.getElementById('cpuBadge').textContent = `${cpuUsage}%`;
+}
+
+// Update Memory chart with random data
+function simulateMemoryData() {
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const memoryUsage = getRandomInt(30, 60);
+    
+    memoryChart.data.labels.push(time);
+    memoryChart.data.labels.shift();
+    memoryChart.data.datasets[0].data.push(memoryUsage);
+    memoryChart.data.datasets[0].data.shift();
+    memoryChart.update();
+    
+    document.getElementById('memoryBadge').textContent = `${memoryUsage}%`;
+}
+
+// Update Network chart with random data
+function simulateNetworkData() {
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const incomingRate = getRandomInt(200, 800);
+    const outgoingRate = getRandomInt(100, 500);
+    
+    networkChart.data.labels.push(time);
+    networkChart.data.labels.shift();
+    networkChart.data.datasets[0].data.push(incomingRate);
+    networkChart.data.datasets[0].data.shift();
+    networkChart.data.datasets[1].data.push(outgoingRate);
+    networkChart.data.datasets[1].data.shift();
+    networkChart.update();
+    
+    const totalTraffic = ((incomingRate + outgoingRate) / 1024).toFixed(1);
+    document.getElementById('networkBadge').textContent = `${totalTraffic} MB/s`;
+}
+
+// In case the backend connection fails, use this function
+function startDataSimulation() {
+    // Initial simulation
+    simulateCpuData();
+    simulateMemoryData();
+    simulateNetworkData();
+    
+    // Set interval for regular updates
+    setInterval(simulateCpuData, 3000);
+    setInterval(simulateMemoryData, 3000);
+    setInterval(simulateNetworkData, 3000);
+}
+
+// Fallback in case the backend calls fail
+window.addEventListener('error', function(e) {
+    if (e.target.tagName.toLowerCase() === 'script') {
+        console.warn('Script error detected, starting simulation mode');
+        startDataSimulation();
+    }
+});
+    </script>
+</body>
+</html>
