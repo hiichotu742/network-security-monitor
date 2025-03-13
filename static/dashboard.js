@@ -665,6 +665,48 @@ function startDataSimulation() {
   setInterval(simulateNetworkData, 3000);
 }
 
+document.addEventListener("DOMContentLoaded", function () {
+    const chatbotIcon = document.getElementById("chatbot-icon");
+    const chatbotContainer = document.getElementById("chatbot-container");
+    const chatbotMessages = document.getElementById("chatbot-messages");
+
+    chatbotIcon.addEventListener("click", function () {
+        if (chatbotContainer.style.display === "none" || chatbotContainer.style.display === "") {
+            chatbotContainer.style.display = "block";
+            fetchAttackLogs();
+        } else {
+            chatbotContainer.style.display = "none";
+        }
+    });
+
+    async function fetchAttackLogs() {
+        try {
+            const response = await fetch("http://127.0.0.1:5000/get_attacks");
+            const data = await response.json();
+
+            chatbotMessages.innerHTML = ""; // Clear previous messages
+
+            if (data.attacks.length === 0) {
+                chatbotMessages.innerHTML = "<p>No recent attacks detected.</p>";
+                return;
+            }
+
+            let messages = "<h4>🚨 Recent Attacks 🚨</h4>";
+            data.attacks.forEach(attack => {
+                messages += `<div class="attack-entry">
+                                <p>⚠️ <b>${attack.attack_type}</b></p>
+                                <p><i>${attack.timestamp}</i></p>
+                                <p>📝 ${attack.details}</p>
+                             </div>`;
+            });
+
+            chatbotMessages.innerHTML = messages;
+        } catch (error) {
+            chatbotMessages.innerHTML = "<p>❌ Error fetching attack data.</p>";
+        }
+    }
+});
+
 // Fallback
 window.addEventListener("error", function (e) {
   if (e.target.tagName.toLowerCase() === "script") {
